@@ -1,0 +1,193 @@
+/* #############################################################################################
+#  File-name   	: AGNCY_CR_RPORT_10504301.sql
+#  Part of     	: FSDM
+#  Type        	: BTEQ - LDR
+#  Job         	: LOAD AGNCY_CR_RPORT
+#  -------------------------------------------------------------------------
+#  Purpose     	: The purpose of this file is to load data into the AGNCY_CR_RPORT
+#  Type			: SCD-TYPE-1
+#  Data-source 	: &&ENV_STAGE
+#  Target		: &&ENV_LDR
+#  -------------------------------------------------------------------------
+#  DB-Version  	: TD 16.20
+#  OS-Version  	: SUSE Linux  
+#  -------------------------------------------------------------------------
+#  Project      : ARB - REMEDIATION
+#  Sub project  : 
+#  Author      	: ZC0025
+#  Department  	: DATA MANAGEMENT
+#  Version     	: 1.0
+#  Date        	: 2021-11-08
+#  -------------------------------------------------------------------------
+#  History:
+#
+# DATE_AUTH    		Version  	OWNER    			    Description OF Change
+# ----    		------   	--------   			   --------------------
+# 2021-11-08   	1.0   		ZC0025	                 	FIRST DRAFT
+ #############################################################################################
+*/
+
+
+/* #############################################################################################
+# Opening the BTEQ Script
+ #############################################################################################*/
+/* #############################################################################################
+# Loggin on
+ #############################################################################################*/
+
+.SET WIDTH 255
+.SET PAGELENGTH 255
+
+
+.RUN FILE=&&LOGON_PATH/&&LOGON_FILE_NAME;
+
+
+/* #############################################################################################
+# Registering Batch and Task in ETL Metadata via Procedure Calls 
+# For Batch Registration Only Pass Workflow Name as Input Parameter.  
+# For Task Registration, Pass Workflow Name & Command Task Name as Input Parameters. 
+ #############################################################################################*/
+CALL &&ENV_METADATA.INFA_BATCH_INSRT('&&WORKFLOW_NAME');
+CALL &&ENV_METADATA.INFA_SESSION_INSRT('&&WORKFLOW_NAME','AGNCY_CR_RPORT_10504301');
+
+/* #############################################################################################
+# Volatile MAX_EXECUTION_SESSION_ID table creation
+ #############################################################################################*/
+
+CREATE VOLATILE TABLE MAX_EXECUTION_SESSION_ID
+(
+ EXECUTION_SESSION_ID INTEGER
+)
+PRIMARY INDEX ( EXECUTION_SESSION_ID )
+ON COMMIT PRESERVE ROWS;
+ 
+.IF ERRORCODE<>0 THEN .QUIT ERRORCODE;
+
+
+
+/* #############################################################################################
+# SAVING SESSION EXECUTION ID INTO METADATA TABLE
+ #############################################################################################*/
+INSERT INTO MAX_EXECUTION_SESSION_ID
+SELECT COALESCE(MAX(A.SESSION_EXECUTION_ID),-1)
+FROM 
+&&ENV_METADATA.SESSION_EXECUTION A 
+INNER JOIN
+&&ENV_METADATA.INFA_SESSIONS B ON
+A.SESSION_ID = B.SESSION_ID
+WHERE B.SESSION_NAME = 'AGNCY_CR_RPORT_10504301';
+
+/* #############################################################################################
+# LOGGING Start Entry in STEPS_LOG table
+ #############################################################################################*/
+
+CALL &&ENV_METADATA.START_STEP('AGNCY_CR_RPORT_10504301','&&WORKFLOW_NAME',(SELECT EXECUTION_SESSION_ID FROM MAX_EXECUTION_SESSION_ID));
+
+BT;
+
+/* #############################################################################################
+# TRUNCATING LDR TABLE
+ #############################################################################################*/
+
+DELETE &&ENV_LDR.AGNCY_CR_RPORT_10504301 ALL;
+
+/* #############################################################################################
+# LOADING INTO LDR TABLE 
+ #############################################################################################*/
+
+
+INSERT INTO &&ENV_LDR.AGNCY_CR_RPORT_10504301
+(RPTG_PRTY_ID,OBLGR_PRTY_ID,CR_RPORT_DTTM,OBLGR_NTLTY_TYPE_CD,OBLGR_GNDR_TYPE_CD,OBLGR_MRTL_STS_CD,INST_ID,OBLGR_LAST_NAME_AR,OBLGR_LAST_NAME_EN,OBLGR_FIRST_NAME_AR,OBLGR_FIRST_NAME_EN,ADVSRY_TXT,OBLGR_BIRTH_DT,OBLGR_EML_ADDR_NAME,OBLGR_DOC_TYPE_NAME,OBLGR_IDNTFTN_NUM,OBLGR_IDNTFTN_EXPRY_DT,CR_INSTM_CNT,DFLT_CNT,GUARTD_CR_INSTM_CNT,CLCTN_CNT,MTD_CLCTN_CNT,CUR_DLNQT_BAL_AMT,ERLT_ISSUE_DT,ELIMTN_DT,TOT_GUARTD_LIABTY_AMT,TOT_DFLT_AMT,TOT_LIABTY_AMT,TOT_LMT_AMT,RCORD_ID,REC_IND,INSRT_SESS_ID,UPDT_SESS_ID,RECYCLE_FLAG,RECYCLE_REASON,SRC_TAB_KEY,SRC_TAB_NAME,SRC_COL_NAME,RECYCLE_CDC_TIMESTAMP)
+
+SELECT
+	SGK_PRTY.PRTY_ID AS RPTG_PRTY_ID,SGK_PRTY.PRTY_ID AS OBLGR_PRTY_ID,HLP_ICTBB08.ISSUE_DATE AS CR_RPORT_DTTM,NTLTY_TYPE.NTLTY_CD AS OBLGR_NTLTY_TYPE_CD,GNDR_TYPE.GNDR_TYPE_CD AS OBLGR_GNDR_TYPE_CD,MRTL_STS_TYPE.MRTL_STS_CD AS OBLGR_MRTL_STS_CD,INST_TYPE.INST_TYPE_CD AS INST_ID,TRIM(FAMILY_NAME_AR) AS OBLGR_LAST_NAME_AR,TRIM(FAMILY_NAME_EN) AS OBLGR_LAST_NAME_EN,TRIM(FIRST_NAME_AR) AS OBLGR_FIRST_NAME_AR,TRIM(FIRST_NAME_EN ) AS OBLGR_FIRST_NAME_EN,TRIM(ADVISORY_TEXT) AS ADVSRY_TXT,DT_BIRTH AS OBLGR_BIRTH_DT,EML_ADDR AS OBLGR_EML_ADDR_NAME,C_TP_DOC_APPL  AS OBLGR_DOC_TYPE_NAME,ID_NUMBER  AS OBLGR_IDNTFTN_NUM,DT_VAL AS OBLGR_IDNTFTN_EXPRY_DT,CNT_CREDIT_INSTR AS CR_INSTM_CNT,CNT_DEFAULTS AS DFLT_CNT,CNT_GNT_CREDIT_INS AS GUARTD_CR_INSTM_CNT,CNT_PREV_ENQUIRIES AS CLCTN_CNT,MONTH_TO_DATE_ENQ AS MTD_CLCTN_CNT,CURR_DEL_BALANCE AS CUR_DLNQT_BAL_AMT,DT_EARLIEST_ISSUE  AS ERLT_ISSUE_DT,DT_ELI AS ELIMTN_DT,TOT_G_LIABILITIES  AS TOT_GUARTD_LIABTY_AMT,TOTAL_DEFAULTS AS TOT_DFLT_AMT,TOTAL_LIABILITIES AS TOT_LIABTY_AMT,TOTAL_LIMITS AS TOT_LMT_AMT
+    ,10504301 AS RCORD_ID
+	,'I' AS REC_IND
+	,SESS.EXECUTION_SESSION_ID 	
+	,SESS.EXECUTION_SESSION_ID
+	,CASE WHEN (SGK_PRTY.PRTY_ID IS NULL OR SGK_PRTY.PRTY_ID IS NULL OR HLP_ICTBB08.ISSUE_DATE IS NULL OR NTLTY_TYPE.NTLTY_CD IS NULL OR GNDR_TYPE.GNDR_TYPE_CD IS NULL OR MRTL_STS_TYPE.MRTL_STS_CD IS NULL OR INST_TYPE.INST_TYPE_CD IS NULL) THEN 'Y' ELSE 'N' END AS RECYCLE_FLAG,                  
+	(CASE WHEN SGK_PRTY.PRTY_ID  IS NULL THEN 'RPTG_PRTY_ID MISSED' ELSE 'RPTG_PRTY_ID MATCHED' END||'-'||CASE WHEN SGK_PRTY.PRTY_ID  IS NULL THEN 'OBLGR_PRTY_ID MISSED' ELSE 'OBLGR_PRTY_ID MATCHED' END||'-'||CASE WHEN HLP_ICTBB08.ISSUE_DATE  IS NULL THEN 'CR_RPORT_DTTM MISSED' ELSE 'CR_RPORT_DTTM MATCHED' END||'-'||CASE WHEN NTLTY_TYPE.NTLTY_CD  IS NULL THEN 'OBLGR_NTLTY_TYPE_CD MISSED' ELSE 'OBLGR_NTLTY_TYPE_CD MATCHED' END||'-'||CASE WHEN GNDR_TYPE.GNDR_TYPE_CD  IS NULL THEN 'OBLGR_GNDR_TYPE_CD MISSED' ELSE 'OBLGR_GNDR_TYPE_CD MATCHED' END||'-'||CASE WHEN MRTL_STS_TYPE.MRTL_STS_CD  IS NULL THEN 'OBLGR_MRTL_STS_CD MISSED' ELSE 'OBLGR_MRTL_STS_CD MATCHED' END||'-'||CASE WHEN INST_TYPE.INST_TYPE_CD  IS NULL THEN 'INST_ID MISSED' ELSE 'INST_ID MATCHED' END) AS RECYCLE_REASON,
+	SRC.SRC_TAB_KEY AS SRC_TAB_KEY,                   
+	SRC.SRC_TAB_NAME AS SRC_TAB_NAME,                  
+	SRC.SRC_COL_NAME AS SRC_COL_NAME,                  
+	SRC.CDC_TIMESTAMP AS RECYCLE_CDC_TIMESTAMP
+
+FROM
+	(
+		SELECT * FROM
+		
+		(
+			SELECT C_ST_CIV_APPL ,DT_VAL,CNT_PREV_ENQUIRIES,FAMILY_NAME_EN,ADVISORY_TEXT,C_TP_DOC_APPL ,FIRST_NAME_AR,DT_EARLIEST_ISSUE ,TOTAL_LIMITS,EML_ADDR,C_NAZ_EST_APPL_CON,C_SEX_APPL,DT_BIRTH,TOTAL_DEFAULTS,CNT_DEFAULTS,TOTAL_LIABILITIES,CNT_GNT_CREDIT_INS,TOT_G_LIABILITIES ,DT_ELI,CURR_DEL_BALANCE,FIRST_NAME_EN ,FAMILY_NAME_AR,MONTH_TO_DATE_ENQ,CD_NDG_FSC,PG_RQS,CD_NDG_FSC,ID_NUMBER ,CNT_CREDIT_INSTR,CDC_TIMESTAMP
+			,'No Info in SMX' AS SRC_TAB_KEY,'CTF-KSA_ICTBB05' AS SRC_TAB_NAME,	'C_ST_CIV_APPL ,DT_VAL,CNT_PREV_ENQUIRIES,FAMILY_NAME_EN,ADVISORY_TEXT,C_TP_DOC_APPL ,FIRST_NAME_AR,DT_EARLIEST_ISSUE ,TOTAL_LIMITS,EML_ADDR,C_NAZ_EST_APPL_CON,C_SEX_APPL,DT_BIRTH,TOTAL_DEFAULTS,CNT_DEFAULTS,TOTAL_LIABILITIES,CNT_GNT_CREDIT_INS,TOT_G_LIABILITIES ,DT_ELI,CURR_DEL_BALANCE,FIRST_NAME_EN ,FAMILY_NAME_AR,MONTH_TO_DATE_ENQ,CD_NDG_FSC,PG_RQS,CD_NDG_FSC,ID_NUMBER ,CNT_CREDIT_INSTR,CDC_TIMESTAMP' AS SRC_COL_NAME
+			FROM &&ENV_STAGE.CTF-KSA_ICTBB05 SRC 
+			WEHRE CD_NDG_FSC IS NOT NULL AND TRIM(CD_NDG_FSC)<> ''  
+			
+			UNION ALL
+			
+			SELECT C_ST_CIV_APPL ,DT_VAL,CNT_PREV_ENQUIRIES,FAMILY_NAME_EN,ADVISORY_TEXT,C_TP_DOC_APPL ,FIRST_NAME_AR,DT_EARLIEST_ISSUE ,TOTAL_LIMITS,EML_ADDR,C_NAZ_EST_APPL_CON,C_SEX_APPL,DT_BIRTH,TOTAL_DEFAULTS,CNT_DEFAULTS,TOTAL_LIABILITIES,CNT_GNT_CREDIT_INS,TOT_G_LIABILITIES ,DT_ELI,CURR_DEL_BALANCE,FIRST_NAME_EN ,FAMILY_NAME_AR,MONTH_TO_DATE_ENQ,CD_NDG_FSC,PG_RQS,CD_NDG_FSC,ID_NUMBER ,CNT_CREDIT_INSTR,CDC_TIMESTAMP
+			,'No Info in SMX' AS SRC_TAB_KEY,'CTF-KSA_ICTBB05' AS SRC_TAB_NAME,	'C_ST_CIV_APPL ,DT_VAL,CNT_PREV_ENQUIRIES,FAMILY_NAME_EN,ADVISORY_TEXT,C_TP_DOC_APPL ,FIRST_NAME_AR,DT_EARLIEST_ISSUE ,TOTAL_LIMITS,EML_ADDR,C_NAZ_EST_APPL_CON,C_SEX_APPL,DT_BIRTH,TOTAL_DEFAULTS,CNT_DEFAULTS,TOTAL_LIABILITIES,CNT_GNT_CREDIT_INS,TOT_G_LIABILITIES ,DT_ELI,CURR_DEL_BALANCE,FIRST_NAME_EN ,FAMILY_NAME_AR,MONTH_TO_DATE_ENQ,CD_NDG_FSC,PG_RQS,CD_NDG_FSC,ID_NUMBER ,CNT_CREDIT_INSTR,CDC_TIMESTAMP' AS SRC_COL_NAME
+			FROM &&ENV_STAGE_RECYCLE.CTF-KSA_ICTBB05_AGNCY_CR_RPORT_10504301 SRC 
+			WEHRE CD_NDG_FSC IS NOT NULL AND TRIM(CD_NDG_FSC)<> ''  
+			
+		) AA
+        
+		QUALIFY ROW_NUMBER() OVER ( PARTITION BY CD_NDG_FSC ORDER BY CDC_TIMESTAMP DESC)=1
+	) SRC
+
+	LEFT JOIN &&PRD_HLP.SGK_PRTY SGK_PRTY ON SGK_PRTY.NAT_KEY='SIMAH'
+	AND SGK_PRTY.TYPE_CD= 'CREDIT RATING AGENCY' 
+	AND INST_ID=(SELECT INST_TYPE_CD FROM INST_TYPE WHERE INST_TYPE_NAME='ALRAJHI BANK KSA') 
+	LEFT JOIN &&PRD_HLP.SGK_PRTY SGK_PRTY ON SGK_PRTY.NAT_KEY=TRIM(SRC.CD_NDG_FSC)  
+	AND SGK_PRTY.TYPE_CD ='CUSTOMER'
+	AND SGK_PRTY.INST_ID=(SELECT INST_TYPE_CD FROM INST_TYPE WHERE INST_TYPE_NAME='ALRAJHI BANK KSA')
+	LEFT JOIN &&PRD_HLP.HLP_ICTBB08 HLP_ICTBB08 ON HLP.PG_RQS = TRIM(SRC.PG_RQS) AND HLP.CD_NDG_FSC = TRIM(SRC.CD_NDG_FSC)
+	LEFT JOIN &&PRD_FSDM.NTLTY_TYPE NTLTY_TYPE ON NTLTY_NAME=COALESCE(TRIM(SRC.C_NAZ_EST_APPL_CON),'UNKNOWN')
+	LEFT JOIN &&PRD_FSDM.GNDR_TYPE GNDR_TYPE ON GNDR_TYPE_NAME=COALESCE(TRIM(SRC.C_SEX_APPL),'UNKNOWN')
+	LEFT JOIN &&PRD_FSDM.MRTL_STS_TYPE MRTL_STS_TYPE ON MRTL_STS_NAME=COALESCE(TRIM(SRC.C_ST_CIV_APPL ),'UNKNOWN')
+	LEFT JOIN &&PRD_FSDM.INST_TYPE INST_TYPE ON INST_TYPE_NAME='ALRAJHI BANK KSA'
+	
+    CROSS JOIN
+	MAX_EXECUTION_SESSION_ID SESS;
+
+
+ET;
+
+.IF ERRORCODE = 0 THEN .GOTO SUCCESS_STEP
+
+
+/*#############################################################################################
+# Logging Failure Entry in STEPS_LOG table in case failure
+#############################################################################################*/
+.IF ERRORCODE <> 0 THEN CALL &&ENV_METADATA.FAIL_STEP('AGNCY_CR_RPORT_10504301','&&WORKFLOW_NAME',(SELECT EXECUTION_SESSION_ID FROM MAX_EXECUTION_SESSION_ID));
+.QUIT ERRORCODE;
+
+
+.LABEL SUCCESS_STEP
+
+/*#############################################################################################
+#  Recycle Handling PROCEDURE is invoked to move rows to Recycle Table.
+#  Two Input paramters should be passed to RECYCLE_HANDLING SP
+#  First input argument should be LDR table name like 'AGNCY_CR_RPORT_10504301'
+#  Second argument should be Job Type which can be 0,1, or 2
+#  Third argument is an output argument which recieves status of Procedure Call
+#############################################################################################*/
+CALL &&ENV_METADATA.RECYCLE_HANDLING('AGNCY_CR_RPORT_10504301',1,P_RESULT);
+
+.IF ERRORCODE <> 0 THEN .QUIT ERRORCODE;
+ 
+
+/*#############################################################################################
+# LOGGING Success Entry in STEPS_LOG table
+#############################################################################################*/
+CALL &&ENV_METADATA.END_STEP('AGNCY_CR_RPORT_10504301','&&WORKFLOW_NAME',(SELECT EXECUTION_SESSION_ID FROM MAX_EXECUTION_SESSION_ID),'SOURCE_TABLE_NAME',0,0,0,0,0,'LDR');
+	
+.IF ERRORCODE <> 0 THEN .QUIT ERRORCODE;
+	
+
+
+/*#############################################################################################
+#  Closing the BTEQ Script, Session Closed and Logging off
+#############################################################################################*/
+  
+.LOGOFF
+.QUIT

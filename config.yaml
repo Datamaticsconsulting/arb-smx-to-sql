@@ -1,0 +1,140 @@
+SQL_TEMPLATES:
+  RECYCLE: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\templates\template_recycle.txt
+  RECYCLE_NO: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\templates\template.txt
+  SP_CALL_TEMPLATE: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\templates\sp_call_template.txt
+
+LOGGERINFO:
+  LOG_PATH : /home/cornelius/kafka_py/logs/
+
+PD_PATH:
+  SQL : C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\SQL_SCRIPTS_RRA\
+  MAIN: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\
+  JOBS: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\jobs_execution.xlsx
+  JOBS_STATUS: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\jobs_execution_status.xlsx
+  SMX: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\SMX_RRA.xlsx
+  
+RULES_SMX:
+  RULE_1:
+    COND: >
+        rule[rule.find("FROM"): rule.find("WHERE")]
+    TABLE: >
+        str(rule[rule.find("FROM"): rule.find("WHERE")]).split(" ")[1]
+    #JOIN_COND: >
+    #    "LEFT JOIN " + environment + "." + join_table + " " + join_table + " " + rule[rule.find("WHERE"):].replace("WHERE", "ON", 1).replace("<<SOURCE_COLUMN>>","SRC." + source_col).replace("LOOKUP", "SELECT").replace("SGK.", join_table + ".").replace("<<SOURCE_COLUMN1>>","SRC." + source_col)
+    JOIN_COND: >
+        "LEFT JOIN " + environment + "." + join_table + " " + join_table + " " + str(rule[rule.find("WHERE"):]).replace("WHERE", "ON", 1).replace("LOOKUP", "SELECT").replace("SGK.", join_table + ".")
+    SELECT_STATEMENT: >
+        source_statement + "AS " + tgt_column
+    SRC_STATEMENT: >
+        rule[:rule.find("FROM")].replace("LOOKUP ", join_table + ".")
+    RECYCLE_FLAG: >
+        "CASE WHEN "+source_statement+" IS NULL THEN '"+tgt_column+" MISSED' ELSE '"+tgt_column+" MATCHED' END"
+    RECYCLE_IND: > 
+        rule[:rule.find("FROM")].replace("LOOKUP ", join_table + ".") + " IS NULL"
+    RULE_TYPE: JOIN
+  
+  RULE_2:
+    COND: >
+      rule == 'HIGH DATE'
+    SELECT_STATEMENT: >
+        "CAST ('9999-12-31 00:00:00' AS TIMESTAMP(0) ) AS " + tgt_column
+    RULE_TYPE: HIGH_DATE       
+  
+  RULE_3:
+    COND: >
+        rule == 'TRIM(<<SOURCE_COLUMN>>)'
+    SELECT_STATEMENT: >
+        "TRIM(" + source_col + ") AS " + tgt_column
+    RULE_TYPE: SRC_COL
+
+  RULE_4:
+    COND: >
+        rule == 'IF RECORD EXIST THEN USE <<SOURCE_COLUMN2>> ELSE COALESCE(<<SOURCE_COLUMN1>>,<<SOURCE_COLUMN2>>)'
+    SELECT_STATEMENT: >
+        "COALESCE(" +source_col + ") AS " + tgt_column
+    RULE_TYPE: SRC_COL_COLEASCE
+
+  RULE_5:
+    COND: >
+        rule == '-'
+    SELECT_STATEMENT: >
+        "NULL AS " + tgt_column
+    RULE_TYPE: SRC_COL_NULL
+    
+  RULE_6:
+    COND: >
+        rule[rule.find("Generate"): rule.find(" based on")]
+    SELECT_STATEMENT: >
+        "'" + rule + "' AS "+ tgt_column
+    RULE_TYPE: TGT_COL_GEN
+
+  RULE_7:
+    COND: >
+        rule == "TRIM("+source_col+")"
+    SELECT_STATEMENT: >
+        "TRIM(" + source_col + ") AS " + tgt_column
+    RULE_TYPE: SRC_COL_NAME    
+    
+  #RULE_8:
+  #  COND: >
+  #      rule[rule.find("CASE"): rule.find("\nWHEN(<<SOURCE_COLUMN>>)", re.MULTILINE)]
+  #  SELECT_STATEMENT: >
+  #      rule.replace("<<SOURCE_COLUMN>>", source_col) + " AS " + tgt_column
+  #  RULE_TYPE: SRC_COL_CASE_ST    
+   
+  RULE_8:
+    COND: >
+        rule.find("CASE \nWHEN (<<SOURCE_COLUMN>>)") != -1
+    SELECT_STATEMENT: >
+        rule.replace("<<SOURCE_COLUMN>>", source_col) + " AS " + tgt_column
+    RULE_TYPE: SRC_COL_CASE_ST  
+  
+  RULE_9:
+    COND: >
+        rule == '1:1 MAPPING'
+    SELECT_STATEMENT: >
+        source_col + " AS " + tgt_column
+    RULE_TYPE: ONE_TO_ONE
+    
+  RULE_10:
+    COND: >
+        rule.find("(<<SOURCE_COLUMN2>>)") != -1
+    SELECT_STATEMENT: >
+        rule1 + " AS " + tgt_column
+    RULE_TYPE: MULTI_ONE_ONE  
+    
+  RULE_11:
+    COND: >
+        rule.find("GENERATE SGK FOR 'UNKNOWN'") != -1
+    SELECT_STATEMENT: >
+        '"' + rule.replace('<<SOURCE_COLUMN>>', source_col) + '" AS ' + tgt_column
+    RULE_TYPE: GEN_SGK_UNK  
+    
+  RULE_12:
+    COND: >
+        rule.find("(CHAR_LENGTH(TRIM(<<SOURCE_COLUMN1>>))") != -1
+    SELECT_STATEMENT: >
+        rule.replace('<<SOURCE_COLUMN1>>', source_col).replace("-", " || '-' || ") + ' AS ' + tgt_column
+    RULE_TYPE: CHAR_LEN_SRC  
+  
+  RULE_13:
+    COND: >
+        rule.find("CASE WHEN TRIM(<<SOURCE_COLUMN1>>)") != -1
+    SELECT_STATEMENT: >
+        rule.replace("<<SOURCE_COLUMN1>>", source_col).replace("<<SOURCE_COLUMN1>", source_col) + " AS " + tgt_column
+    RULE_TYPE: SRC_COL1_CASE_ST  
+    
+  RULE_14:
+    COND: >
+        rule.find("HARDCODE VALUE  = '") != -1
+    SELECT_STATEMENT: >
+        rule[rule.find("'"):] + " AS " + tgt_column
+    RULE_TYPE: HARD_VALUE
+    
+  RULE_15:
+    COND: >
+        rule.find("GENERATE SGK FOR NAT_KEY") != -1
+    SELECT_STATEMENT: >
+        '"' + rule.replace('<<SOURCE_COLUMN>>', source_col) + '" AS ' + tgt_column
+    RULE_TYPE: GEN_SGK_NAT  
+    
