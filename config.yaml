@@ -1,3 +1,4 @@
+## SCRIPT TEMPLATES ##
 SQL_TEMPLATES:
   RECYCLE: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\templates\template_recycle.txt
   RECYCLE_NO: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\templates\template.txt
@@ -6,13 +7,15 @@ SQL_TEMPLATES:
 LOGGERINFO:
   LOG_PATH : /home/cornelius/kafka_py/logs/
 
+## PROJECT DIRECTORY ##
 PD_PATH:
   SQL : C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\SQL_SCRIPTS_RRA\
   MAIN: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\
   JOBS: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\jobs_execution.xlsx
   JOBS_STATUS: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\jobs_execution_status.xlsx
   SMX: C:\Users\HP\Desktop\DMC\AlRajhi\py-projects\excel_files\SMX_RRA.xlsx
-  
+
+## RULE ENGINE ##  
 RULES_SMX:
   RULE_1:
     COND: >
