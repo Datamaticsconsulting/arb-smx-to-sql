@@ -83,10 +83,10 @@ Project directory path and nested paths to operational files:
 Path to directory where the automated scripts will be generated.
 
 #### JOBS
-Path to excel file containing jobs to run information. The main class executes based on the input ingested from this file.
+Path to excel file containing jobs to run information. The main class executes based on the input ingested from this file. [RAW FILE](https://github.com/Datamaticsconsulting/arb-smx-to-sql/blob/main/excel_files/jobs_execution.xlsx)
 
 #### JOBS_STATUS
-An additional file is maintained by the program to update each job's status along with any failures if any. This is the path to job's status excel file.
+An additional file is maintained by the program to update each job's status along with any failures if any. This is the path to job's status excel file. [RAW FILE](https://github.com/Datamaticsconsulting/arb-smx-to-sql/blob/main/excel_files/jobs_execution_status.xlsx)
 
 #### SMX
 Path to Excel SMX file to read all the mappings from.
